@@ -53,7 +53,7 @@ async def main() -> None:
         while True:
             links = set()
             for link in link_generator:
-                if len(links == 5):
+                if len(links) == 5:
                     break
 
                 if get_domain_name_from_url(site) not in link:
@@ -66,12 +66,12 @@ async def main() -> None:
                 break
 
             results = await asyncio.gather(
-                {get_words_and_links(session, link) for link in links},
+                *{get_words_and_links(session, link) for link in links},
                 return_exceptions=True,
             )
 
             for i, result in enumerate(results):
-                db.add_result(links[i], result)
+                db.add_result(list(links)[i], result)
 
 
 if __name__ == "__main__":
