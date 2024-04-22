@@ -73,6 +73,7 @@ async def main() -> None:
             for i, result in enumerate(results):
                 if isinstance(result, Exception):
                     logger.exception(result)
+                    db.add_failed(list(links)[i])
                     continue
 
                 db.add_result(list(links)[i], result)
