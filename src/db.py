@@ -33,7 +33,7 @@ class Database:
                 "links": self._sanitize(self._links),
                 "failed": list(self._failed),
             }
-            json.dump(as_dict, f)
+            json.dump(as_dict, f, indent=4, ensure_ascii=False)
 
     @staticmethod
     def _unsanitize(as_dict: dict[str, list[str]]) -> dict[str, set[str]]:
