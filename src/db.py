@@ -1,5 +1,8 @@
 import json
 import typing as t
+import urllib.parse
+
+from loguru import logger
 
 from src.utils import DATA_DIR
 
@@ -7,6 +10,13 @@ if t.TYPE_CHECKING:
     from src.__main__ import SiteResult
 
 DB_FILE = DATA_DIR / "db.json"
+
+
+def get_domain_name_from_url(url: str) -> str:
+    # http://www.example.test/foo/bar -> www.example.test
+    netloc = urllib.parse.urlparse(url).netloc
+    # -> example.test
+    return ".".join(netloc.split(".")[-2:])
 
 
 class Database:
@@ -49,18 +59,24 @@ class Database:
             result[key] = list(value)
         return result
 
-    def get_links(self) -> t.Iterator[str]:
-        found_unvisited_link = True
-        while found_unvisited_link:
-            found_unvisited_link = False
-
+    def get_links(self, root_link: str) -> t.Iterator[str]:
+        while True:
             all_links = self._links["__total"].copy()
             for link in all_links:
                 if (link not in self._words or link not in self._links) and (
                     link not in self._failed
                 ):
-                    found_unvisited_link = True
+                    if get_domain_name_from_url(root_link) not in link:
+                        logger.warning(f"{link!r} is not valid!")
+                        self.add_failed(link)
+                        continue
+                    if link.endswith(".jpg") or link.endswith(".png"):
+                        logger.warning(f"{link!r} is an image, not parsing")
+                        self.add_failed(link)
+                        continue
                     yield link
+            else:
+                break
 
     def add_words(self, site: str, words: set[str]) -> None:
         self._words[site] = words

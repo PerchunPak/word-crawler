@@ -11,13 +11,6 @@ from loguru import logger
 from src.db import Database
 
 
-def get_domain_name_from_url(url: str) -> str:
-    # http://www.example.test/foo/bar -> www.example.test
-    netloc = urllib.parse.urlparse(url).netloc
-    # -> example.test
-    return ".".join(netloc.split(".")[-2:])
-
-
 @dataclasses.dataclass
 class SiteResult:
     words: set[str]
@@ -47,22 +40,20 @@ async def main() -> None:
     db = Database()
     async with aiohttp.ClientSession() as session:
         root_results = await get_words_and_links(session, site)
+        logger.success("Parsed root link! Starting to parse children...")
+
         db.add_result(site, root_results)
 
-        link_generator = db.get_links()
+        link_generator = db.get_links(root_link=site)
         while True:
             links = set()
             for link in link_generator:
                 if len(links) == 5:
                     break
-
-                if get_domain_name_from_url(site) not in link:
-                    logger.warning(f"{link!r} is not valid!")
-                    continue
-
                 links.add(link)
 
             if len(links) == 0:
+                logger.success("Done!")
                 break
 
             results = await asyncio.gather(
